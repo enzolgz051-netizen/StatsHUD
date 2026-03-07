@@ -26,9 +26,16 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
+      - name: Find DLL location
+        shell: powershell
+        run: Get-ChildItem -Path build -Recurse -Filter *.dll | Select-Object FullName
+
       - name: Upload DLL
         uses: actions/upload-artifact@v4
         with:
           name: StatsHUD-plugin
-          path: build/**/*.dll
+          path: |
+            build/Release/StatsHUD.dll
+            build/StatsHUD.dll
+            build/Debug/StatsHUD.dll
           if-no-files-found: warn
