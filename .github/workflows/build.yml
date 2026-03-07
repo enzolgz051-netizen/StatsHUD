@@ -21,21 +21,18 @@ jobs:
         run: git clone https://github.com/bakkesmodorg/BakkesModSDK.git C:/BakkesModSDK
 
       - name: Configure CMake
-        run: cmake -S . -B build -DBAKKESMOD_SDK_PATH="C:/BakkesModSDK" -A x64
+        run: cmake -S . -B build -DBAKKESMOD_SDK_PATH="C:/BakkesModSDK" -A x64 -DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE="${{github.workspace}}/output"
 
       - name: Build
         run: cmake --build build --config Release
 
       - name: Find DLL location
         shell: powershell
-        run: Get-ChildItem -Path build -Recurse -Filter *.dll | Select-Object FullName
+        run: Get-ChildItem -Path . -Recurse -Filter *.dll | Select-Object FullName
 
       - name: Upload DLL
         uses: actions/upload-artifact@v4
         with:
           name: StatsHUD-plugin
-          path: |
-            build/Release/StatsHUD.dll
-            build/StatsHUD.dll
-            build/Debug/StatsHUD.dll
-          if-no-files-found: warn
+          path: output/StatsHUD.dll
+          if-no-files-found: error
