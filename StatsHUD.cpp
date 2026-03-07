@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "StatsHUD.h"
 
-BAKKESMOD_PLUGIN(StatsHUD, "Stats HUD", "1.0.0", PLUGINTYPE_FREEPLAY | PLUGINTYPE_CUSTOM_TRAINING | PLUGINTYPE_ONLINE)
+BAKKESMOD_PLUGIN(StatsHUD, "Stats HUD", "1.0.0", PLUGINTYPE_FREEPLAY | PLUGINTYPE_CUSTOM_TRAINING)
 
 void StatsHUD::onLoad()
 {
@@ -23,14 +23,9 @@ void StatsHUD::onLoad()
         [this](std::string name) { OnMatchEnded(name); });
     gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState",
         [this](std::string name) { OnMatchStarted(name); });
-
-    LOG("StatsHUD loaded!");
 }
 
-void StatsHUD::onUnload()
-{
-    LOG("StatsHUD unloaded.");
-}
+void StatsHUD::onUnload() {}
 
 float StatsHUD::GetBoostAmount()
 {
@@ -69,15 +64,8 @@ void StatsHUD::OnMatchEnded(std::string eventName)
     int theirScore = isOrange ? teams.Get(0).GetScore() : teams.Get(1).GetScore();
     bool won = (myScore > theirScore);
 
-    if (won) {
-        winStreak++;
-        lossStreak = 0;
-        totalWins++;
-    } else {
-        lossStreak++;
-        winStreak = 0;
-        totalLosses++;
-    }
+    if (won) { winStreak++; lossStreak = 0; totalWins++; }
+    else     { lossStreak++; winStreak = 0; totalLosses++; }
     lastGameWon = won;
 }
 
@@ -92,9 +80,8 @@ void StatsHUD::Render(CanvasWrapper canvas)
     float panelH  = 175.f * scale;
     float margin  = 20.f  * scale;
     float padding = 14.f  * scale;
-
-    float panelX = screenSize.X - panelW - margin;
-    float panelY = screenSize.Y - panelH - margin;
+    float panelX  = screenSize.X - panelW - margin;
+    float panelY  = screenSize.Y - panelH - margin;
 
     // Shadow
     canvas.SetColor(LinearColor{0.f, 0.f, 0.f, 0.5f});
@@ -106,36 +93,33 @@ void StatsHUD::Render(CanvasWrapper canvas)
     canvas.SetPosition(Vector2F{panelX, panelY});
     canvas.FillBox(Vector2F{panelW, panelH});
 
-    // Top accent bar
+    // Top accent
     canvas.SetColor(LinearColor{0.3f, 0.55f, 1.0f, 1.f});
     canvas.SetPosition(Vector2F{panelX, panelY});
     canvas.FillBox(Vector2F{panelW, 3.f * scale});
 
     // Boost
     float boost = GetBoostAmount();
-
     canvas.SetColor(LinearColor{0.55f, 0.6f, 0.75f, 1.f});
     canvas.SetPosition(Vector2F{panelX + padding, panelY + padding + 2.f * scale});
     canvas.DrawString("BOOST", 1.05f * scale, 1.05f * scale, false);
 
-    LinearColor boostColor;
-    if      (boost > 50.f) boostColor = LinearColor{0.2f,  1.0f,  0.5f,  1.f};
-    else if (boost > 20.f) boostColor = LinearColor{1.0f,  0.82f, 0.1f,  1.f};
-    else                   boostColor = LinearColor{1.0f,  0.25f, 0.25f, 1.f};
+    LinearColor bc;
+    if      (boost > 50.f) bc = LinearColor{0.2f, 1.0f, 0.5f, 1.f};
+    else if (boost > 20.f) bc = LinearColor{1.0f, 0.82f, 0.1f, 1.f};
+    else                   bc = LinearColor{1.0f, 0.25f, 0.25f, 1.f};
 
-    canvas.SetColor(boostColor);
+    canvas.SetColor(bc);
     canvas.SetPosition(Vector2F{panelX + padding, panelY + padding + 17.f * scale});
     canvas.DrawString(std::to_string((int)boost) + "%", 2.1f * scale, 2.1f * scale, false);
 
     float barY = panelY + padding + 52.f * scale;
     float barW = panelW - padding * 2.f;
     float barH = 7.f * scale;
-
     canvas.SetColor(LinearColor{0.18f, 0.18f, 0.22f, 1.f});
     canvas.SetPosition(Vector2F{panelX + padding, barY});
     canvas.FillBox(Vector2F{barW, barH});
-
-    canvas.SetColor(boostColor);
+    canvas.SetColor(bc);
     canvas.SetPosition(Vector2F{panelX + padding, barY});
     canvas.FillBox(Vector2F{barW * (boost / 100.f), barH});
 
@@ -147,23 +131,18 @@ void StatsHUD::Render(CanvasWrapper canvas)
 
     // Wins / Losses
     float wlY = div1Y + 9.f * scale;
-
     canvas.SetColor(LinearColor{0.55f, 0.6f, 0.75f, 1.f});
     canvas.SetPosition(Vector2F{panelX + padding, wlY});
     canvas.DrawString("WINS", 0.95f * scale, 0.95f * scale, false);
-
     canvas.SetColor(LinearColor{0.25f, 1.0f, 0.55f, 1.f});
     canvas.SetPosition(Vector2F{panelX + padding + 44.f * scale, wlY - 1.f * scale});
     canvas.DrawString(std::to_string(totalWins), 1.4f * scale, 1.4f * scale, false);
-
     canvas.SetColor(LinearColor{0.35f, 0.35f, 0.45f, 1.f});
     canvas.SetPosition(Vector2F{panelX + panelW * 0.5f - 4.f * scale, wlY});
     canvas.DrawString("|", 1.2f * scale, 1.2f * scale, false);
-
     canvas.SetColor(LinearColor{0.55f, 0.6f, 0.75f, 1.f});
     canvas.SetPosition(Vector2F{panelX + panelW * 0.5f + 6.f * scale, wlY});
     canvas.DrawString("LOSSES", 0.95f * scale, 0.95f * scale, false);
-
     canvas.SetColor(LinearColor{1.0f, 0.3f, 0.3f, 1.f});
     canvas.SetPosition(Vector2F{panelX + panelW - padding - 28.f * scale, wlY - 1.f * scale});
     canvas.DrawString(std::to_string(totalLosses), 1.4f * scale, 1.4f * scale, false);
@@ -176,7 +155,6 @@ void StatsHUD::Render(CanvasWrapper canvas)
 
     // Streak
     float streakY = div2Y + 9.f * scale;
-
     if (winStreak > 0) {
         canvas.SetColor(LinearColor{0.55f, 0.6f, 0.75f, 1.f});
         canvas.SetPosition(Vector2F{panelX + padding, streakY});
