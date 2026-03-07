@@ -26,9 +26,12 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
+      - name: Find DLL
+        run: dir /s /b build\*.dll
+
       - name: Upload DLL
         uses: actions/upload-artifact@v4
         with:
           name: StatsHUD-plugin
-          path: build/Release/StatsHUD.dll
+          path: build/**/*.dll
           if-no-files-found: error
