@@ -7,5 +7,3 @@
 #include "bakkesmod/wrappers/canvaswrapper.h"
 #include "bakkesmod/wrappers/GameEvent/ServerWrapper.h"
 #include "bakkesmod/wrappers/GameEvent/TutorialWrapper.h"
-#include "bakkesmod/wrappers/items/ItemsWrapper.h"
-#include "bakkesmod/wrappers/carcomponent/BoostWrapper.h"
