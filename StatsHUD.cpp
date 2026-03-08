@@ -64,8 +64,12 @@ void StatsHUD::OnMatchEnded(std::string eventName)
     lastGameWon = won;
 }
 
-// ── Shape : gauche arrondi convexe, droite arrondi CONCAVE (suit le cercle boost) ──
-// Dessine ligne par ligne
+// ─────────────────────────────────────────────────────────────────────────────
+// Dessine une forme dont :
+//   - côté GAUCHE  = arrondi convexe (coins normaux)
+//   - côté DROIT   = arrondi CONCAVE (épouse le cercle du boost)
+// ligne par ligne
+// ─────────────────────────────────────────────────────────────────────────────
 static void DrawHUDShape(CanvasWrapper& canvas,
                           int px, int py, int pw, int ph,
                           int boostCX, int boostCY, int boostR,
@@ -73,11 +77,10 @@ static void DrawHUDShape(CanvasWrapper& canvas,
                           int cr, int cg, int cb, int ca)
 {
     canvas.SetColor(cr, cg, cb, ca);
-
     for (int i = 0; i < ph; i++) {
         int y = py + i;
 
-        // Bord gauche arrondi (convexe)
+        // Bord gauche arrondi (convexe — coins normaux)
         int xL = px;
         if (i < leftR) {
             int d = leftR - i;
@@ -87,11 +90,11 @@ static void DrawHUDShape(CanvasWrapper& canvas,
             xL = px + leftR - (int)sqrtf((float)(leftR*leftR - d*d));
         }
 
-        // Bord droit concave : suit le bord gauche du cercle boost
+        // Bord droit concave : suit exactement le bord gauche du cercle boost
         float dy = (float)(y - boostCY);
-        int xR = px + pw; // défaut : plat
+        int xR = px + pw; // fallback plat
         if (fabsf(dy) < (float)boostR) {
-            float dx = sqrtf((float)((float)boostR * (float)boostR) - dy * dy);
+            float dx = sqrtf((float)(boostR*boostR) - dy*dy);
             int circleEdge = boostCX - (int)dx;
             if (circleEdge < xR) xR = circleEdge;
         }
@@ -104,7 +107,7 @@ static void DrawHUDShape(CanvasWrapper& canvas,
     }
 }
 
-// ── Render ───────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 void StatsHUD::Render(CanvasWrapper canvas)
 {
     if (!*cvarEnabled) return;
@@ -114,92 +117,92 @@ void StatsHUD::Render(CanvasWrapper canvas)
     float W = (sz.X > 100) ? (float)sz.X : 1920.f;
     float H = (sz.Y > 100) ? (float)sz.Y : 1080.f;
 
-    // Centre et rayon du cercle boost natif RL (1920x1080)
-    int boostCX = (int)(W - 118.f * s);
-    int boostCY = (int)(H - 100.f * s);
-    int boostR  = (int)(100.f * s);
+    // ── Centre et rayon du cercle boost natif ─────────────────────────────────
+    // Mesuré précisément sur screenshot 1920x1080
+    // Le boost est dans le coin bas-droit, son centre est à ~590px du bord droit
+    // et ~360px du bord bas, avec un rayon de ~70px (cercle INTERNE de l'anneau)
+    int boostCX = (int)(W - 590.f * s);   // ~1330 sur 1920
+    int boostCY = (int)(H - 360.f * s);   // ~720  sur 1080
+    int boostR  = (int)(72.f * s);        // rayon du cercle anneau boost
 
-    int panelW  = (int)(220.f * s);
-    int panelH  = (int)(120.f * s);
-    int leftR   = (int)(16.f  * s);
+    // ── Panel ─────────────────────────────────────────────────────────────────
+    int panelW = (int)(210.f * s);
+    int panelH = (int)(118.f * s);
+    int leftR  = (int)(14.f  * s);
 
-    // Panel collé au cercle — son bord droit COMMENCE là où le cercle commence
+    // Le bord droit du panel touche le bord gauche du cercle
     int panelX = boostCX - boostR - panelW;
     int panelY = boostCY - panelH / 2;
 
-    // Ombre
+    // ── Ombre ─────────────────────────────────────────────────────────────────
     DrawHUDShape(canvas, panelX+3, panelY+5, panelW, panelH,
-                 boostCX, boostCY, boostR, leftR,
-                 0, 0, 0, 75);
+                 boostCX, boostCY, boostR, leftR, 0,0,0, 80);
 
-    // Fond
+    // ── Fond principal ────────────────────────────────────────────────────────
     DrawHUDShape(canvas, panelX, panelY, panelW, panelH,
-                 boostCX, boostCY, boostR, leftR,
-                 10, 13, 20, 228);
+                 boostCX, boostCY, boostR, leftR, 10,13,20, 230);
 
-    // Bordure subtile
-    DrawHUDShape(canvas, panelX,   panelY,   panelW,   panelH,   boostCX, boostCY, boostR, leftR, 70, 75, 100, 100);
-    DrawHUDShape(canvas, panelX+1, panelY+1, panelW-2, panelH-2, boostCX, boostCY, boostR, leftR, 10, 13,  20, 228);
+    // ── Bordure ───────────────────────────────────────────────────────────────
+    DrawHUDShape(canvas, panelX,   panelY,   panelW,   panelH,
+                 boostCX, boostCY, boostR, leftR, 70,75,100, 110);
+    DrawHUDShape(canvas, panelX+1, panelY+1, panelW-2, panelH-2,
+                 boostCX, boostCY, boostR, leftR, 10,13,20, 230);
 
-    // Barre orange top
+    // ── Barre accent orange (couleur boost RL) ────────────────────────────────
     DrawHUDShape(canvas, panelX, panelY, panelW, (int)(4.f*s),
-                 boostCX, boostCY, boostR, leftR,
-                 255, 155, 15, 255);
+                 boostCX, boostCY, boostR, leftR, 255,155,15, 255);
 
-    // ── Texte ─────────────────────────────────────────────────────────────────
-    int pad    = (int)(16.f * s);
-    int rowH   = (int)(33.f * s);
-    float lS   = 1.05f * s;
-    float vS   = 1.55f * s;
+    // ── Layout texte ──────────────────────────────────────────────────────────
+    int pad   = (int)(15.f * s);
+    int rowH  = (int)(33.f * s);
+    float lS  = 1.05f * s;
+    float vS  = 1.55f * s;
 
     int row1Y  = panelY + (int)(12.f * s);
     int row2Y  = row1Y + rowH;
     int row3Y  = row2Y + rowH;
     int labelX = panelX + pad;
-    int valueX = panelX + panelW - (int)(30.f * s);
+    int valueX = panelX + panelW - (int)(28.f * s);
 
     // Dividers
-    canvas.SetColor(38, 44, 60, 200);
-    canvas.SetPosition(Vector2{ labelX, row2Y - (int)(2.f*s) });
-    canvas.FillBox(Vector2{ (int)(panelW * 0.7f), 1 });
-    canvas.SetPosition(Vector2{ labelX, row3Y - (int)(2.f*s) });
-    canvas.FillBox(Vector2{ (int)(panelW * 0.7f), 1 });
+    canvas.SetColor(38,44,60, 200);
+    canvas.SetPosition(Vector2{ labelX, row2Y-(int)(2.f*s) });
+    canvas.FillBox(Vector2{ (int)(panelW * 0.68f), 1 });
+    canvas.SetPosition(Vector2{ labelX, row3Y-(int)(2.f*s) });
+    canvas.FillBox(Vector2{ (int)(panelW * 0.68f), 1 });
 
     // WINS
-    canvas.SetColor(190, 195, 215, 255);
+    canvas.SetColor(190,195,215, 255);
     canvas.SetPosition(Vector2{ labelX, row1Y });
     canvas.DrawString("WINS", lS, lS, false);
-    canvas.SetColor(50, 230, 110, 255);
+    canvas.SetColor(50,230,110, 255);
     std::string wStr = std::to_string(totalWins);
-    canvas.SetPosition(Vector2{ valueX - (int)(wStr.size() * 14.f * s), row1Y - (int)(3.f*s) });
+    canvas.SetPosition(Vector2{ valueX-(int)(wStr.size()*14.f*s), row1Y-(int)(3.f*s) });
     canvas.DrawString(wStr, vS, vS, false);
 
     // LOSSES
-    canvas.SetColor(190, 195, 215, 255);
+    canvas.SetColor(190,195,215, 255);
     canvas.SetPosition(Vector2{ labelX, row2Y });
     canvas.DrawString("LOSSES", lS, lS, false);
-    canvas.SetColor(255, 60, 60, 255);
+    canvas.SetColor(255,60,60, 255);
     std::string lStr = std::to_string(totalLosses);
-    canvas.SetPosition(Vector2{ valueX - (int)(lStr.size() * 14.f * s), row2Y - (int)(3.f*s) });
+    canvas.SetPosition(Vector2{ valueX-(int)(lStr.size()*14.f*s), row2Y-(int)(3.f*s) });
     canvas.DrawString(lStr, vS, vS, false);
 
     // STREAK
-    canvas.SetColor(190, 195, 215, 255);
+    canvas.SetColor(190,195,215, 255);
     canvas.SetPosition(Vector2{ labelX, row3Y });
     canvas.DrawString("STREAK", lS, lS, false);
-
-    std::string sStr;
-    int sr, sg, sb;
-    if (winStreak > 0)       { sStr = "+" + std::to_string(winStreak);  sr=255; sg=205; sb=25; }
-    else if (lossStreak > 0) { sStr = "-" + std::to_string(lossStreak); sr=255; sg=60;  sb=60; }
-    else                     { sStr = "-"; sr=95; sg=100; sb=118; }
-
-    canvas.SetColor(sr, sg, sb, 255);
-    canvas.SetPosition(Vector2{ valueX - (int)(sStr.size() * 14.f * s), row3Y - (int)(3.f*s) });
+    std::string sStr; int sr,sg,sb;
+    if (winStreak>0)       { sStr="+"+std::to_string(winStreak);  sr=255;sg=205;sb=25; }
+    else if (lossStreak>0) { sStr="-"+std::to_string(lossStreak); sr=255;sg=60; sb=60; }
+    else                   { sStr="-"; sr=95;sg=100;sb=118; }
+    canvas.SetColor(sr,sg,sb, 255);
+    canvas.SetPosition(Vector2{ valueX-(int)(sStr.size()*14.f*s), row3Y-(int)(3.f*s) });
     canvas.DrawString(sStr, vS, vS, false);
 
     // by MielCarbo
-    canvas.SetColor(50, 55, 70, 180);
-    canvas.SetPosition(Vector2{ panelX + panelW - (int)(76.f*s), panelY + panelH + (int)(4.f*s) });
+    canvas.SetColor(50,55,70, 180);
+    canvas.SetPosition(Vector2{ panelX+panelW-(int)(76.f*s), panelY+panelH+(int)(4.f*s) });
     canvas.DrawString("by MielCarbo", 0.65f*s, 0.65f*s, false);
 }
