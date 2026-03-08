@@ -33,12 +33,12 @@ void StatsHUD::onLoad()
     gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState",
         [this](std::string name) { OnMatchStarted(name); });
 
-    LOG("StatsHUD loaded!");
+    cvarManager->log("StatsHUD loaded!");
 }
 
 void StatsHUD::onUnload()
 {
-    LOG("StatsHUD unloaded.");
+    cvarManager->log("StatsHUD unloaded.");
 }
 
 // ─────────────────────────────────────────────
