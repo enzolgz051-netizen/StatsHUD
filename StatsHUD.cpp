@@ -19,9 +19,7 @@ void StatsHUD::onLoad()
         .bindTo(cvarScale);
 
     // Canvas render hook
-    gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
-        if (*cvarEnabled) Render(canvas);
-    });
+    gameWrapper->RegisterDrawable(std::bind(&StatsHUD::Render, this, std::placeholders::_1));
 
     // Match events
     gameWrapper->HookEvent("Function TAGame.Team_TA.ScorePoint",
@@ -46,7 +44,7 @@ void StatsHUD::onUnload()
 // ─────────────────────────────────────────────
 float StatsHUD::GetBoostAmount()
 {
-    if (!gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame()) return 0.f;
+    if (!gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame() && !gameWrapper->IsInFreeplay()) return 0.f;
 
     auto car = gameWrapper->GetLocalCar();
     if (car.IsNull()) return 0.f;
@@ -121,8 +119,8 @@ static inline Vector2 V2(float x, float y) { return Vector2{ (int)x, (int)y }; }
 // ─────────────────────────────────────────────
 void StatsHUD::Render(CanvasWrapper canvas)
 {
-    // Only draw in game
-    if (!gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame()) return;
+    // Check enabled
+    if (!*cvarEnabled) return;
 
     float scale = *cvarScale;
     auto screenSize = canvas.GetSize();
