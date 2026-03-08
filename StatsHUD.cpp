@@ -125,14 +125,18 @@ void StatsHUD::Render(CanvasWrapper canvas)
     float scale = *cvarScale;
     auto screenSize = canvas.GetSize();
 
+    // Fallback si GetSize() retourne 0
+    float screenW = (screenSize.X > 0) ? (float)screenSize.X : 1920.f;
+    float screenH = (screenSize.Y > 0) ? (float)screenSize.Y : 1080.f;
+
     // ── Layout constants ──────────────────────
     float panelW  = 230.f * scale;
     float panelH  = 175.f * scale;
     float margin  = 20.f  * scale;
     float padding = 14.f  * scale;
 
-    float panelX = screenSize.X - panelW - margin;
-    float panelY = screenSize.Y - panelH - margin;
+    float panelX = screenW - panelW - margin;
+    float panelY = screenH - panelH - margin;
 
     // ── Shadow ────────────────────────────────
     canvas.SetColor(LinearColor{0.f, 0.f, 0.f, 0.5f});
