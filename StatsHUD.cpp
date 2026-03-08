@@ -30,16 +30,6 @@ void StatsHUD::onUnload()
     cvarManager->log("StatsHUD unloaded.");
 }
 
-float StatsHUD::GetBoostAmount()
-{
-    if (!gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame() && !gameWrapper->IsInFreeplay()) return 0.f;
-    auto car = gameWrapper->GetLocalCar();
-    if (car.IsNull()) return 0.f;
-    auto boost = car.GetBoostComponent();
-    if (boost.IsNull()) return 0.f;
-    return boost.GetCurrentBoostAmount() * 100.f;
-}
-
 void StatsHUD::OnMatchStarted(std::string eventName)
 {
     inMatch = true;
@@ -83,127 +73,99 @@ void StatsHUD::Render(CanvasWrapper canvas)
 
     float scale = *cvarScale;
     auto screenSize = canvas.GetSize();
-
     float screenW = (screenSize.X > 100) ? (float)screenSize.X : 1920.f;
     float screenH = (screenSize.Y > 100) ? (float)screenSize.Y : 1080.f;
 
-    float panelW  = 230.f * scale;
-    float panelH  = 175.f * scale;
-    float margin  = 20.f  * scale;
-    float padding = 14.f  * scale;
+    // ── Dimensions du panel ──
+    // Aligné visuellement juste au-dessus du boost natif RL (bas droite)
+    // Le boost natif est ~220px depuis la droite, ~160px depuis le bas
+    float panelW  = 200.f * scale;
+    float panelH  = 80.f  * scale;
+    float marginR = 155.f * scale;   // aligne avec le boost natif RL
+    float marginB = 175.f * scale;   // juste au-dessus du boost
 
-    float panelX = screenW - panelW - margin;
-    float panelY = screenH - panelH - margin;
+    float px = screenW - panelW - marginR;
+    float py = screenH - panelH - marginB;
 
-    // ── Shadow
-    canvas.SetColor(0, 0, 0, 128);
-    canvas.SetPosition(Vector2{ (int)(panelX + 4.f), (int)(panelY + 4.f) });
+    // ── Background semi-transparent ──
+    canvas.SetColor(8, 12, 20, 200);
+    canvas.SetPosition(Vector2{ (int)px, (int)py });
     canvas.FillBox(Vector2{ (int)panelW, (int)panelH });
 
-    // ── Background
-    canvas.SetColor(15, 15, 26, 235);
-    canvas.SetPosition(Vector2{ (int)panelX, (int)panelY });
-    canvas.FillBox(Vector2{ (int)panelW, (int)panelH });
+    // ── Barre latérale gauche (accent RL style) ──
+    canvas.SetColor(0, 180, 255, 255);
+    canvas.SetPosition(Vector2{ (int)px, (int)py });
+    canvas.FillBox(Vector2{ (int)(3.f * scale), (int)panelH });
 
-    // ── Top accent bar
-    canvas.SetColor(77, 140, 255, 255);
-    canvas.SetPosition(Vector2{ (int)panelX, (int)panelY });
-    canvas.FillBox(Vector2{ (int)panelW, (int)(3.f * scale) });
+    // ── Ligne diagonale décorative haut-droite (style tech RL) ──
+    // Simule un angle en dessinant un triangle coupé en haut à droite
+    canvas.SetColor(0, 180, 255, 180);
+    canvas.SetPosition(Vector2{ (int)(px + panelW - 18.f * scale), (int)py });
+    canvas.FillBox(Vector2{ (int)(18.f * scale), (int)(3.f * scale) });
+    canvas.SetPosition(Vector2{ (int)(px + panelW - 3.f * scale), (int)py });
+    canvas.FillBox(Vector2{ (int)(3.f * scale), (int)(18.f * scale) });
 
-    // ── BOOST label
-    float boost = GetBoostAmount();
+    // ── Ligne diagonale décorative bas-gauche ──
+    canvas.SetColor(0, 180, 255, 100);
+    canvas.SetPosition(Vector2{ (int)(px + 3.f * scale), (int)(py + panelH - 3.f * scale) });
+    canvas.FillBox(Vector2{ (int)(18.f * scale), (int)(3.f * scale) });
 
-    canvas.SetColor(140, 153, 191, 255);
-    canvas.SetPosition(Vector2{ (int)(panelX + padding), (int)(panelY + padding + 2.f * scale) });
-    canvas.DrawString("BOOST", 1.05f * scale, 1.05f * scale, false);
+    float padding = 12.f * scale;
 
-    // Boost value color
-    int br, bg, bb;
-    if      (boost > 50.f) { br = 51;  bg = 255; bb = 128; }
-    else if (boost > 20.f) { br = 255; bg = 209; bb = 26;  }
-    else                   { br = 255; bg = 64;  bb = 64;  }
+    // ── WINS ──
+    float col1X = px + padding + 3.f * scale;
+    float col2X = px + panelW * 0.52f;
 
-    canvas.SetColor(br, bg, bb, 255);
-    canvas.SetPosition(Vector2{ (int)(panelX + padding), (int)(panelY + padding + 17.f * scale) });
-    canvas.DrawString(std::to_string((int)boost) + "%", 2.1f * scale, 2.1f * scale, false);
+    // Label W
+    canvas.SetColor(120, 140, 160, 255);
+    canvas.SetPosition(Vector2{ (int)col1X, (int)(py + padding) });
+    canvas.DrawString("W", 0.85f * scale, 0.85f * scale, false);
 
-    // Boost bar track
-    float barY = panelY + padding + 52.f * scale;
-    float barW = panelW - padding * 2.f;
-    float barH = 7.f * scale;
+    // Valeur wins (vert)
+    canvas.SetColor(80, 255, 160, 255);
+    canvas.SetPosition(Vector2{ (int)(col1X + 16.f * scale), (int)(py + padding - 2.f * scale) });
+    canvas.DrawString(std::to_string(totalWins), 1.3f * scale, 1.3f * scale, false);
 
-    canvas.SetColor(46, 46, 56, 255);
-    canvas.SetPosition(Vector2{ (int)(panelX + padding), (int)barY });
-    canvas.FillBox(Vector2{ (int)barW, (int)barH });
+    // Label L
+    canvas.SetColor(120, 140, 160, 255);
+    canvas.SetPosition(Vector2{ (int)col2X, (int)(py + padding) });
+    canvas.DrawString("L", 0.85f * scale, 0.85f * scale, false);
 
-    canvas.SetColor(br, bg, bb, 255);
-    canvas.SetPosition(Vector2{ (int)(panelX + padding), (int)barY });
-    canvas.FillBox(Vector2{ (int)(barW * (boost / 100.f)), (int)barH });
+    // Valeur losses (rouge)
+    canvas.SetColor(255, 80, 80, 255);
+    canvas.SetPosition(Vector2{ (int)(col2X + 16.f * scale), (int)(py + padding - 2.f * scale) });
+    canvas.DrawString(std::to_string(totalLosses), 1.3f * scale, 1.3f * scale, false);
 
-    // ── Divider 1
-    float div1Y = barY + barH + 10.f * scale;
-    canvas.SetColor(64, 64, 89, 178);
-    canvas.SetPosition(Vector2{ (int)(panelX + padding), (int)div1Y });
-    canvas.FillBox(Vector2{ (int)(panelW - padding * 2.f), 1 });
+    // ── Séparateur ──
+    canvas.SetColor(0, 180, 255, 60);
+    canvas.SetPosition(Vector2{ (int)(px + 3.f * scale), (int)(py + panelH * 0.52f) });
+    canvas.FillBox(Vector2{ (int)(panelW - 3.f * scale), (int)(1.f * scale) });
 
-    // ── WINS / LOSSES
-    float wlY = div1Y + 9.f * scale;
-
-    canvas.SetColor(140, 153, 191, 255);
-    canvas.SetPosition(Vector2{ (int)(panelX + padding), (int)wlY });
-    canvas.DrawString("WINS", 0.95f * scale, 0.95f * scale, false);
-
-    canvas.SetColor(64, 255, 140, 255);
-    canvas.SetPosition(Vector2{ (int)(panelX + padding + 44.f * scale), (int)(wlY - 1.f * scale) });
-    canvas.DrawString(std::to_string(totalWins), 1.4f * scale, 1.4f * scale, false);
-
-    canvas.SetColor(89, 89, 115, 255);
-    canvas.SetPosition(Vector2{ (int)(panelX + panelW * 0.5f - 4.f * scale), (int)wlY });
-    canvas.DrawString("|", 1.2f * scale, 1.2f * scale, false);
-
-    canvas.SetColor(140, 153, 191, 255);
-    canvas.SetPosition(Vector2{ (int)(panelX + panelW * 0.5f + 6.f * scale), (int)wlY });
-    canvas.DrawString("LOSSES", 0.95f * scale, 0.95f * scale, false);
-
-    canvas.SetColor(255, 77, 77, 255);
-    canvas.SetPosition(Vector2{ (int)(panelX + panelW - padding - 28.f * scale), (int)(wlY - 1.f * scale) });
-    canvas.DrawString(std::to_string(totalLosses), 1.4f * scale, 1.4f * scale, false);
-
-    // ── Divider 2
-    float div2Y = wlY + 22.f * scale;
-    canvas.SetColor(64, 64, 89, 178);
-    canvas.SetPosition(Vector2{ (int)(panelX + padding), (int)div2Y });
-    canvas.FillBox(Vector2{ (int)(panelW - padding * 2.f), 1 });
-
-    // ── STREAK
-    float streakY = div2Y + 9.f * scale;
+    // ── STREAK ──
+    float streakY = py + panelH * 0.55f;
 
     if (winStreak > 0) {
-        canvas.SetColor(140, 153, 191, 255);
-        canvas.SetPosition(Vector2{ (int)(panelX + padding), (int)streakY });
-        canvas.DrawString("WIN STREAK", 0.95f * scale, 0.95f * scale, false);
-
-        canvas.SetColor(255, 209, 26, 255);
-        canvas.SetPosition(Vector2{ (int)(panelX + panelW - padding - 36.f * scale), (int)(streakY - 2.f * scale) });
-        canvas.DrawString(std::to_string(winStreak) + "W", 1.45f * scale, 1.45f * scale, false);
+        // Label
+        canvas.SetColor(120, 140, 160, 255);
+        canvas.SetPosition(Vector2{ (int)col1X, (int)streakY });
+        canvas.DrawString("STREAK", 0.8f * scale, 0.8f * scale, false);
+        // Valeur gold
+        canvas.SetColor(255, 210, 30, 255);
+        canvas.SetPosition(Vector2{ (int)(col1X + 58.f * scale), (int)(streakY - 1.f * scale) });
+        canvas.DrawString("+" + std::to_string(winStreak) + "W", 1.1f * scale, 1.1f * scale, false);
 
     } else if (lossStreak > 0) {
-        canvas.SetColor(140, 153, 191, 255);
-        canvas.SetPosition(Vector2{ (int)(panelX + padding), (int)streakY });
-        canvas.DrawString("LOSS STREAK", 0.95f * scale, 0.95f * scale, false);
-
-        canvas.SetColor(255, 77, 77, 255);
-        canvas.SetPosition(Vector2{ (int)(panelX + panelW - padding - 36.f * scale), (int)(streakY - 2.f * scale) });
-        canvas.DrawString(std::to_string(lossStreak) + "L", 1.45f * scale, 1.45f * scale, false);
+        canvas.SetColor(120, 140, 160, 255);
+        canvas.SetPosition(Vector2{ (int)col1X, (int)streakY });
+        canvas.DrawString("STREAK", 0.8f * scale, 0.8f * scale, false);
+        // Valeur rouge
+        canvas.SetColor(255, 80, 80, 255);
+        canvas.SetPosition(Vector2{ (int)(col1X + 58.f * scale), (int)(streakY - 1.f * scale) });
+        canvas.DrawString("-" + std::to_string(lossStreak) + "L", 1.1f * scale, 1.1f * scale, false);
 
     } else {
-        canvas.SetColor(115, 115, 128, 255);
-        canvas.SetPosition(Vector2{ (int)(panelX + padding), (int)streakY });
-        canvas.DrawString("No streak yet", 0.9f * scale, 0.9f * scale, false);
+        canvas.SetColor(70, 85, 100, 255);
+        canvas.SetPosition(Vector2{ (int)col1X, (int)streakY });
+        canvas.DrawString("NO STREAK", 0.8f * scale, 0.8f * scale, false);
     }
-
-    // ── Branding
-    canvas.SetColor(89, 97, 128, 230);
-    canvas.SetPosition(Vector2{ (int)(panelX + panelW - padding - 74.f * scale), (int)(panelY + panelH - 14.f * scale) });
-    canvas.DrawString("by MielCarbo", 0.75f * scale, 0.75f * scale, false);
 }
