@@ -115,14 +115,14 @@ void StatsHUD::Render(CanvasWrapper canvas)
     int py   = bcy - ph / 2;
 
     // Ombre
-    DrawHUDShape(canvas, px+3,py+5, pw,ph, bcx,bcy,br,lr, 0,0,0,80);
+    DrawHUDShape(canvas, px+3,py+5, pw,ph, bcx,bcy,br,lr, (unsigned char)0,(unsigned char)0,(unsigned char)0,(unsigned char)80);
     // Fond
-    DrawHUDShape(canvas, px,  py,   pw,ph, bcx,bcy,br,lr, 10,13,20,230);
+    DrawHUDShape(canvas, px,  py,   pw,ph, bcx,bcy,br,lr, (unsigned char)10,(unsigned char)13,(unsigned char)20,(unsigned char)230);
     // Bordure
-    DrawHUDShape(canvas, px,  py,   pw,ph, bcx,bcy,br,lr, 70,75,100,110);
-    DrawHUDShape(canvas, px+1,py+1, pw-2,ph-2, bcx,bcy,br,lr, 10,13,20,230);
+    DrawHUDShape(canvas, px,  py,   pw,ph, bcx,bcy,br,lr, (unsigned char)70,(unsigned char)75,(unsigned char)100,(unsigned char)110);
+    DrawHUDShape(canvas, px+1,py+1, pw-2,ph-2, bcx,bcy,br,lr, (unsigned char)10,(unsigned char)13,(unsigned char)20,(unsigned char)230);
     // Barre orange top
-    DrawHUDShape(canvas, px,py, pw,(int)(4.f*s), bcx,bcy,br,lr, 255,155,15,255);
+    DrawHUDShape(canvas, px,py, pw,(int)(4.f*s), bcx,bcy,br,lr, (unsigned char)255,(unsigned char)155,(unsigned char)15,(unsigned char)255);
 
     // Texte
     int pad=15*s, rowH=33*s;
@@ -130,33 +130,33 @@ void StatsHUD::Render(CanvasWrapper canvas)
     int r1=py+(int)(12*s), r2=r1+rowH, r3=r2+rowH;
     int lx=px+pad, vx=px+pw-(int)(28*s);
 
-    canvas.SetColor(38,44,60,200);
+    canvas.SetColor((unsigned char)38,(unsigned char)44,(unsigned char)60,(unsigned char)200);
     canvas.SetPosition(Vector2{lx,r2-(int)(2*s)}); canvas.FillBox(Vector2{(int)(pw*0.68f),1});
     canvas.SetPosition(Vector2{lx,r3-(int)(2*s)}); canvas.FillBox(Vector2{(int)(pw*0.68f),1});
 
     // WINS
-    canvas.SetColor(190,195,215,255); canvas.SetPosition(Vector2{lx,r1}); canvas.DrawString("WINS",lS,lS,false);
-    canvas.SetColor(50,230,110,255);
+    canvas.SetColor((unsigned char)190,(unsigned char)195,(unsigned char)215,(unsigned char)255); canvas.SetPosition(Vector2{lx,r1}); canvas.DrawString("WINS",lS,lS,false);
+    canvas.SetColor((unsigned char)50,(unsigned char)230,(unsigned char)110,(unsigned char)255);
     std::string w=std::to_string(totalWins);
     canvas.SetPosition(Vector2{vx-(int)(w.size()*14*s),r1-(int)(3*s)}); canvas.DrawString(w,vS,vS,false);
 
     // LOSSES
-    canvas.SetColor(190,195,215,255); canvas.SetPosition(Vector2{lx,r2}); canvas.DrawString("LOSSES",lS,lS,false);
-    canvas.SetColor(255,60,60,255);
+    canvas.SetColor((unsigned char)190,(unsigned char)195,(unsigned char)215,(unsigned char)255); canvas.SetPosition(Vector2{lx,r2}); canvas.DrawString("LOSSES",lS,lS,false);
+    canvas.SetColor((unsigned char)255,(unsigned char)60,(unsigned char)60,(unsigned char)255);
     std::string l=std::to_string(totalLosses);
     canvas.SetPosition(Vector2{vx-(int)(l.size()*14*s),r2-(int)(3*s)}); canvas.DrawString(l,vS,vS,false);
 
     // STREAK
-    canvas.SetColor(190,195,215,255); canvas.SetPosition(Vector2{lx,r3}); canvas.DrawString("STREAK",lS,lS,false);
+    canvas.SetColor((unsigned char)190,(unsigned char)195,(unsigned char)215,(unsigned char)255); canvas.SetPosition(Vector2{lx,r3}); canvas.DrawString("STREAK",lS,lS,false);
     std::string ss; int sr,sg,sb;
     if (winStreak>0)       {ss="+"+std::to_string(winStreak);  sr=255;sg=205;sb=25;}
     else if (lossStreak>0) {ss="-"+std::to_string(lossStreak); sr=255;sg=60; sb=60;}
     else                   {ss="-"; sr=95;sg=100;sb=118;}
-    canvas.SetColor(sr,sg,sb,255);
+    canvas.SetColor((unsigned char)sr,(unsigned char)sg,(unsigned char)sb,(unsigned char)255);
     canvas.SetPosition(Vector2{vx-(int)(ss.size()*14*s),r3-(int)(3*s)}); canvas.DrawString(ss,vS,vS,false);
 
     // by MielCarbo
-    canvas.SetColor(50,55,70,180);
+    canvas.SetColor((unsigned char)50,(unsigned char)55,(unsigned char)70,(unsigned char)180);
     canvas.SetPosition(Vector2{px+pw-(int)(76*s),py+ph+(int)(4*s)});
     canvas.DrawString("by MielCarbo",0.65f*s,0.65f*s,false);
 }
