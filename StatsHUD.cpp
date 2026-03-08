@@ -108,11 +108,16 @@ void StatsHUD::Render(CanvasWrapper canvas)
     auto  sz = canvas.GetSize();
     float W  = (sz.X > 100) ? (float)sz.X : 1920.f;
     float H  = (sz.Y > 100) ? (float)sz.Y : 1080.f;
+    // Debug : affiche la taille écran
+    static int debugCounter = 0;
+    if (debugCounter++ % 300 == 0) {
+        cvarManager->log("Screen: " + std::to_string((int)W) + "x" + std::to_string((int)H));
+    }
 
     // ── Position automatique du boost natif RL (ratio fixe peu importe la résolution) ──
     // Le boost RL est toujours à 30.73% depuis la droite et 33.33% depuis le bas
     // Le rayon est toujours ~6.67% de la hauteur de l'écran
-    int bcx = (int)(W - 0.3073f * W);   // centre X boost
+    int bcx = (int)(W - 0.3073f * W);  // ~x=1330 sur 1920   // centre X boost
     int bcy = (int)(H - 0.3333f * H);   // centre Y boost
     int br  = (int)(0.0667f * H);       // rayon boost
 
