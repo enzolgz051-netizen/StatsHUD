@@ -117,9 +117,9 @@ void StatsHUD::Render(CanvasWrapper canvas)
     // ── Position automatique du boost natif RL (ratio fixe peu importe la résolution) ──
     // Le boost RL est toujours à 30.73% depuis la droite et 33.33% depuis le bas
     // Le rayon est toujours ~6.67% de la hauteur de l'écran
-    int bcx = (int)(W - 0.3073f * W);  // ~x=1330 sur 1920   // centre X boost
-    int bcy = (int)(H - 0.3333f * H);   // centre Y boost
-    int br  = (int)(0.0667f * H);       // rayon boost
+    int bcx = (int)(W - 0.3135f * W);
+    int bcy = (int)(H - 0.3630f * H);
+    int br  = (int)(0.0880f * H);
 
     int pw  = (int)(215.f * s);
     int ph  = (int)(125.f * s);
