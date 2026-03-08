@@ -64,108 +64,151 @@ void StatsHUD::OnMatchEnded(std::string eventName)
     lastGameWon = won;
 }
 
-// ─────────────────────────────────────────────
-//  RENDER
-// ─────────────────────────────────────────────
+// ── Rounded box helper ──────────────────────────────────────────────────────
+static void DrawRoundedBox(CanvasWrapper& canvas, int x, int y, int w, int h, int r,
+                           int cr, int cg, int cb, int ca)
+{
+    canvas.SetColor(cr, cg, cb, ca);
+
+    // Centre + croix
+    canvas.SetPosition(Vector2{ x + r, y });
+    canvas.FillBox(Vector2{ w - r * 2, h });
+    canvas.SetPosition(Vector2{ x, y + r });
+    canvas.FillBox(Vector2{ w, h - r * 2 });
+
+    // 4 coins avec algo cercle
+    for (int i = 0; i < r; i++) {
+        int hw = (int)sqrtf((float)(r * r - (r - i - 1) * (r - i - 1)));
+        canvas.SetPosition(Vector2{ x + r - hw,         y + i });           canvas.FillBox(Vector2{ hw, 1 });
+        canvas.SetPosition(Vector2{ x + w - r,          y + i });           canvas.FillBox(Vector2{ hw, 1 });
+        canvas.SetPosition(Vector2{ x + r - hw,         y + h - 1 - i });   canvas.FillBox(Vector2{ hw, 1 });
+        canvas.SetPosition(Vector2{ x + w - r,          y + h - 1 - i });   canvas.FillBox(Vector2{ hw, 1 });
+    }
+}
+
+// ── Render ──────────────────────────────────────────────────────────────────
 void StatsHUD::Render(CanvasWrapper canvas)
 {
     if (!*cvarEnabled) return;
 
-    float scale = *cvarScale;
-    auto screenSize = canvas.GetSize();
-    float screenW = (screenSize.X > 100) ? (float)screenSize.X : 1920.f;
-    float screenH = (screenSize.Y > 100) ? (float)screenSize.Y : 1080.f;
+    float s = *cvarScale;
+    auto sz = canvas.GetSize();
+    float W = (sz.X > 100) ? (float)sz.X : 1920.f;
+    float H = (sz.Y > 100) ? (float)sz.Y : 1080.f;
 
-    // ── Dimensions du panel ──
-    // Aligné visuellement juste au-dessus du boost natif RL (bas droite)
-    // Le boost natif est ~220px depuis la droite, ~160px depuis le bas
-    float panelW  = 200.f * scale;
-    float panelH  = 80.f  * scale;
-    float marginR = 155.f * scale;   // aligne avec le boost natif RL
-    float marginB = 175.f * scale;   // juste au-dessus du boost
+    // ── Positioning ─────────────────────────────────────────────────────────
+    // Le boost natif RL est dans le coin bas-droit, environ 210px de large, centré à ~W-105 depuis la droite
+    // On se place juste à sa gauche, aligné verticalement
 
-    float px = screenW - panelW - marginR;
-    float py = screenH - panelH - marginB;
+    int boostCenterX = (int)(W - 105.f * s);  // centre approximatif du boost natif
+    int boostCenterY = (int)(H - 105.f * s);  // centre vertical du boost natif
 
-    // ── Background semi-transparent ──
-    canvas.SetColor(8, 12, 20, 200);
-    canvas.SetPosition(Vector2{ (int)px, (int)py });
-    canvas.FillBox(Vector2{ (int)panelW, (int)panelH });
+    int rowH    = (int)(28.f * s);   // hauteur d'une ligne
+    int rowGap  = (int)(6.f  * s);   // espace entre lignes
+    int panelW  = (int)(170.f * s);
+    int panelH  = rowH * 3 + rowGap * 2 + (int)(16.f * s) * 2; // 3 rows + padding
+    int radius  = (int)(10.f * s);
 
-    // ── Barre latérale gauche (accent RL style) ──
-    canvas.SetColor(0, 180, 255, 255);
-    canvas.SetPosition(Vector2{ (int)px, (int)py });
-    canvas.FillBox(Vector2{ (int)(3.f * scale), (int)panelH });
+    // Centré verticalement sur le boost, collé à sa gauche
+    int panelX = boostCenterX - panelW - (int)(18.f * s);
+    int panelY = boostCenterY - panelH / 2;
 
-    // ── Ligne diagonale décorative haut-droite (style tech RL) ──
-    // Simule un angle en dessinant un triangle coupé en haut à droite
-    canvas.SetColor(0, 180, 255, 180);
-    canvas.SetPosition(Vector2{ (int)(px + panelW - 18.f * scale), (int)py });
-    canvas.FillBox(Vector2{ (int)(18.f * scale), (int)(3.f * scale) });
-    canvas.SetPosition(Vector2{ (int)(px + panelW - 3.f * scale), (int)py });
-    canvas.FillBox(Vector2{ (int)(3.f * scale), (int)(18.f * scale) });
+    // ── Background arrondi ──────────────────────────────────────────────────
+    // Ombre portée
+    DrawRoundedBox(canvas, panelX + 3, panelY + 4, panelW, panelH, radius,
+                   0, 0, 0, 100);
+    // Fond principal noir translucide
+    DrawRoundedBox(canvas, panelX, panelY, panelW, panelH, radius,
+                   12, 14, 18, 215);
 
-    // ── Ligne diagonale décorative bas-gauche ──
-    canvas.SetColor(0, 180, 255, 100);
-    canvas.SetPosition(Vector2{ (int)(px + 3.f * scale), (int)(py + panelH - 3.f * scale) });
-    canvas.FillBox(Vector2{ (int)(18.f * scale), (int)(3.f * scale) });
+    // Fine bordure lumineuse
+    DrawRoundedBox(canvas, panelX,     panelY,     panelW,     panelH,     radius, 255, 255, 255, 18);
+    DrawRoundedBox(canvas, panelX + 1, panelY + 1, panelW - 2, panelH - 2, radius, 12, 14, 18, 215);
 
-    float padding = 12.f * scale;
+    // ── Données ─────────────────────────────────────────────────────────────
+    int pad   = (int)(16.f * s);
+    int labelX = panelX + pad;
+    int valX   = panelX + panelW - pad;
 
-    // ── WINS ──
-    float col1X = px + padding + 3.f * scale;
-    float col2X = px + panelW * 0.52f;
+    int games = totalWins + totalLosses;
 
-    // Label W
-    canvas.SetColor(120, 140, 160, 255);
-    canvas.SetPosition(Vector2{ (int)col1X, (int)(py + padding) });
-    canvas.DrawString("W", 0.85f * scale, 0.85f * scale, false);
+    // Ligne 1 : WINS
+    int row1Y = panelY + (int)(14.f * s);
+    // Ligne 2 : LOSSES
+    int row2Y = row1Y + rowH + rowGap;
+    // Ligne 3 : STREAK
+    int row3Y = row2Y + rowH + rowGap;
 
-    // Valeur wins (vert)
-    canvas.SetColor(80, 255, 160, 255);
-    canvas.SetPosition(Vector2{ (int)(col1X + 16.f * scale), (int)(py + padding - 2.f * scale) });
-    canvas.DrawString(std::to_string(totalWins), 1.3f * scale, 1.3f * scale, false);
+    float lScale = 0.82f * s;   // label scale
+    float vScale = 1.15f * s;   // value scale
 
-    // Label L
-    canvas.SetColor(120, 140, 160, 255);
-    canvas.SetPosition(Vector2{ (int)col2X, (int)(py + padding) });
-    canvas.DrawString("L", 0.85f * scale, 0.85f * scale, false);
+    // ── Accent bar gauche (comme dans l'image de référence) ──
+    canvas.SetColor(255, 165, 0, 200);
+    canvas.SetPosition(Vector2{ panelX, panelY + radius });
+    canvas.FillBox(Vector2{ (int)(3.f * s), panelH - radius * 2 });
 
-    // Valeur losses (rouge)
-    canvas.SetColor(255, 80, 80, 255);
-    canvas.SetPosition(Vector2{ (int)(col2X + 16.f * scale), (int)(py + padding - 2.f * scale) });
-    canvas.DrawString(std::to_string(totalLosses), 1.3f * scale, 1.3f * scale, false);
+    // ── WINS ────────────────────────────────────────────────────────────────
+    canvas.SetColor(180, 180, 180, 255);
+    canvas.SetPosition(Vector2{ labelX + (int)(4.f * s), row1Y + (int)(4.f * s) });
+    canvas.DrawString("WINS", lScale, lScale, false);
 
-    // ── Séparateur ──
-    canvas.SetColor(0, 180, 255, 60);
-    canvas.SetPosition(Vector2{ (int)(px + 3.f * scale), (int)(py + panelH * 0.52f) });
-    canvas.FillBox(Vector2{ (int)(panelW - 3.f * scale), (int)(1.f * scale) });
+    canvas.SetColor(80, 255, 140, 255);
+    std::string wStr = std::to_string(totalWins);
+    canvas.SetPosition(Vector2{ valX - (int)(wStr.size() * 10.f * s), row1Y + (int)(2.f * s) });
+    canvas.DrawString(wStr, vScale, vScale, false);
 
-    // ── STREAK ──
-    float streakY = py + panelH * 0.55f;
+    // Divider
+    canvas.SetColor(50, 55, 65, 200);
+    canvas.SetPosition(Vector2{ labelX, row1Y + rowH + (int)(1.f * s) });
+    canvas.FillBox(Vector2{ panelW - pad * 2, 1 });
 
+    // ── LOSSES ──────────────────────────────────────────────────────────────
+    canvas.SetColor(180, 180, 180, 255);
+    canvas.SetPosition(Vector2{ labelX + (int)(4.f * s), row2Y + (int)(4.f * s) });
+    canvas.DrawString("LOSSES", lScale, lScale, false);
+
+    canvas.SetColor(255, 75, 75, 255);
+    std::string lStr = std::to_string(totalLosses);
+    canvas.SetPosition(Vector2{ valX - (int)(lStr.size() * 10.f * s), row2Y + (int)(2.f * s) });
+    canvas.DrawString(lStr, vScale, vScale, false);
+
+    // Divider
+    canvas.SetColor(50, 55, 65, 200);
+    canvas.SetPosition(Vector2{ labelX, row2Y + rowH + (int)(1.f * s) });
+    canvas.FillBox(Vector2{ panelW - pad * 2, 1 });
+
+    // ── STREAK ──────────────────────────────────────────────────────────────
+    canvas.SetColor(180, 180, 180, 255);
+    canvas.SetPosition(Vector2{ labelX + (int)(4.f * s), row3Y + (int)(4.f * s) });
+    canvas.DrawString("STREAK", lScale, lScale, false);
+
+    std::string sStr;
+    int sr, sg, sb;
     if (winStreak > 0) {
-        // Label
-        canvas.SetColor(120, 140, 160, 255);
-        canvas.SetPosition(Vector2{ (int)col1X, (int)streakY });
-        canvas.DrawString("STREAK", 0.8f * scale, 0.8f * scale, false);
-        // Valeur gold
-        canvas.SetColor(255, 210, 30, 255);
-        canvas.SetPosition(Vector2{ (int)(col1X + 58.f * scale), (int)(streakY - 1.f * scale) });
-        canvas.DrawString("+" + std::to_string(winStreak) + "W", 1.1f * scale, 1.1f * scale, false);
-
+        sStr = "+" + std::to_string(winStreak);
+        sr = 255; sg = 205; sb = 30;   // gold
     } else if (lossStreak > 0) {
-        canvas.SetColor(120, 140, 160, 255);
-        canvas.SetPosition(Vector2{ (int)col1X, (int)streakY });
-        canvas.DrawString("STREAK", 0.8f * scale, 0.8f * scale, false);
-        // Valeur rouge
-        canvas.SetColor(255, 80, 80, 255);
-        canvas.SetPosition(Vector2{ (int)(col1X + 58.f * scale), (int)(streakY - 1.f * scale) });
-        canvas.DrawString("-" + std::to_string(lossStreak) + "L", 1.1f * scale, 1.1f * scale, false);
-
+        sStr = "-" + std::to_string(lossStreak);
+        sr = 255; sg = 75; sb = 75;    // rouge
     } else {
-        canvas.SetColor(70, 85, 100, 255);
-        canvas.SetPosition(Vector2{ (int)col1X, (int)streakY });
-        canvas.DrawString("NO STREAK", 0.8f * scale, 0.8f * scale, false);
+        sStr = "0";
+        sr = 120; sg = 120; sb = 120;  // gris
     }
+    canvas.SetColor(sr, sg, sb, 255);
+    canvas.SetPosition(Vector2{ valX - (int)(sStr.size() * 10.f * s), row3Y + (int)(2.f * s) });
+    canvas.DrawString(sStr, vScale, vScale, false);
+
+    // ── GAMES (petit, sous tout) ─────────────────────────────────────────────
+    if (games > 0) {
+        canvas.SetColor(90, 95, 110, 200);
+        std::string gStr = std::to_string(games) + " games";
+        canvas.SetPosition(Vector2{ panelX + panelW / 2 - (int)(gStr.size() * 4.f * s),
+                                    panelY + panelH - (int)(11.f * s) });
+        canvas.DrawString(gStr, 0.65f * s, 0.65f * s, false);
+    }
+
+    // ── by MielCarbo ─────────────────────────────────────────────────────────
+    canvas.SetColor(60, 65, 80, 200);
+    canvas.SetPosition(Vector2{ panelX + panelW - (int)(72.f * s), panelY + panelH + (int)(3.f * s) });
+    canvas.DrawString("by MielCarbo", 0.6f * s, 0.6f * s, false);
 }
